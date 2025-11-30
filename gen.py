@@ -95,7 +95,7 @@ both splits.
         test_examples, operand_digits, result_digits, base, opcount
     )
 
-    print(f"{in_max=}, {out_max=}, {opcount=}")
+    print(f"\n\n{in_max=}, {out_max=}, {opcount=}")
     print(f"{base=}, {operand_digits=}, {result_digits=}")
 
     thing = ArithmeticDatasets(
@@ -184,5 +184,5 @@ def _encode_number(value: int, digits: int, base: int) -> List[float]:
         magnitude //= base
 
     num = [sign] + encoded_digits
-    print(f"{value} -> {[round(n, 2) for n in num]}")
+    # print(f"{value} -> {[round(n, 2) for n in num]}")
     return num
