@@ -10,14 +10,13 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn
 
-from gen import decode_number, encode_number
-
 from nnarith.analysis.base import Analysis
 from nnarith.config import ArchConfig
 from nnarith.history import HistoryRecord
 from nnarith.records import ArtifactRecord, RunContext
 from nnarith.utils import sanitize_label
 from nnarith.visualization.terminal import print_matrix
+from nnarith.encoding import decode_number, encode_number
 
 HeatmapNormalizer = Callable[[int, int, Callable[[int, int], int], int, int], float]
 
@@ -40,6 +39,7 @@ class HeatmapAnalysisConfig:
     colormap: str = "viridis"
     store_raw_matrix: bool = True
     matrix_precision: Optional[int] = None
+    preview_in_terminal: bool = False
 
 
 class HeatmapAnalysis(Analysis):
@@ -52,11 +52,11 @@ class HeatmapAnalysis(Analysis):
         self._operations: Tuple[Callable[[int, int], int], ...] = ()
 
     def begin_run(self, context: RunContext) -> None:
-        run_dir_name = (
-            f"{sanitize_label(context.data_name)}__{sanitize_label(context.training_name)}"
-        )
-        self._current_run_dir = self._base_path / run_dir_name
-        self._current_run_dir.mkdir(parents=True, exist_ok=True)
+        data_segment = sanitize_label(context.data_name)
+        training_segment = sanitize_label(context.training_name)
+        run_dir = self._base_path / data_segment / training_segment
+        run_dir.mkdir(parents=True, exist_ok=True)
+        self._current_run_dir = run_dir
         self._operations = context.sweep.operations
 
     def observe_model(
@@ -132,13 +132,17 @@ class HeatmapAnalysis(Analysis):
                 idx += len(right_values)
 
             op_name = getattr(operation, "__name__", f"op_{op_index}")
-            stem = f"{sanitize_label(arch_name)}__{sanitize_label(op_name)}"
-            plot_path = self._current_run_dir / f"{stem}.png"
-            print_matrix(
-                matrix,
-                cmap=self._config.colormap,
-                precision=self._config.matrix_precision,
-            )
+            arch_segment = sanitize_label(arch_name)
+            op_segment = sanitize_label(op_name)
+            arch_dir = self._current_run_dir / arch_segment
+            arch_dir.mkdir(parents=True, exist_ok=True)
+            plot_path = arch_dir / f"{op_segment}.png"
+            if self._config.preview_in_terminal:
+                print_matrix(
+                    matrix,
+                    cmap=self._config.colormap,
+                    precision=self._config.matrix_precision,
+                )
             self._plot_heatmap(
                 matrix,
                 left_values,
@@ -161,7 +165,7 @@ class HeatmapAnalysis(Analysis):
             )
 
             if self._config.store_raw_matrix:
-                data_path = self._current_run_dir / f"{stem}.json"
+                data_path = arch_dir / f"{op_segment}.json"
                 payload = {
                     "operation": op_name,
                     "left_operands": left_values,

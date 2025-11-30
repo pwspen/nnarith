@@ -5,9 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from gen import EncodingSpec
-
 from nnarith.config import ArchConfig, DataSweep, TrainingConfig
+from nnarith.encoding import EncodingSpec
 from nnarith.history import HistoryRecord, LossSeries, PlotRequest
 from nnarith.utils import sanitize_label
 

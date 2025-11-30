@@ -19,6 +19,7 @@ class LossCurveAnalysisConfig:
     basename: str = "loss_curves"
     group_by: Tuple[str, ...] = ("hidden_layers",)
     base_selectors: Optional[Sequence[Dict[str, str]]] = None
+    announce_paths: bool = False
 
 
 class LossCurveAnalysis(Analysis):
@@ -150,7 +151,8 @@ class LossCurveAnalysis(Analysis):
                     x_limits,
                     y_limits,
                 )
-                print(f"Saved loss curves to {path}")
+                if self._config.announce_paths:
+                    print(f"Saved loss curves to {path}")
                 run_key = (request.data_name, request.training_name)
                 rel_path = os.path.relpath(path, self._results_dir)
                 artifact = ArtifactRecord(
@@ -194,6 +196,7 @@ def plot_series_group(
     x_limits: Tuple[int, int],
     y_limits: Tuple[float, float],
 ) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     plt.figure(figsize=(8, 5))
     color_cycle = plt.cm.tab10.colors
     dash_styles = ["--", "-.", ":"]

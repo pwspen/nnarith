@@ -1,10 +1,26 @@
 from __future__ import annotations
 
-from typing import Set
-
-from gen import EncodingSpec
+from dataclasses import dataclass
+from typing import List, Sequence, Set
 
 from nnarith.config import DataSweep
+
+
+@dataclass(frozen=True)
+class EncodingSpec:
+    base: int
+    operand_digits: int
+    result_digits: int
+
+    @property
+    def input_size(self) -> int:
+        # Features: sign + digits for each operand plus single op-code slot
+        return (2 * (1 + self.operand_digits)) + 1
+
+    @property
+    def target_size(self) -> int:
+        # Targets: sign + digits for the result
+        return 1 + self.result_digits
 
 
 def required_digits(max_abs_value: int, base: int) -> int:
@@ -35,4 +51,27 @@ def compute_encoding(sweep: DataSweep) -> EncodingSpec:
     return EncodingSpec(base=sweep.base, operand_digits=operand_digits, result_digits=result_digits)
 
 
-__all__ = ["compute_encoding", "required_digits"]
+def encode_number(value: int, digits: int, base: int) -> List[float]:
+    sign = 1.0 if value < 0 else 0.0
+    magnitude = abs(value)
+    encoded_digits = [0.0] * digits
+    for position in range(digits - 1, -1, -1):
+        encoded_digits[position] = (magnitude % base) / (base - 1)
+        magnitude //= base
+    return [sign] + encoded_digits
+
+
+def decode_number(encoded: Sequence[float], base: int) -> int:
+    if not encoded:
+        raise ValueError("encoded sequence must not be empty")
+    sign_bit = encoded[0] >= 0.5
+    magnitude_digits = encoded[1:]
+    magnitude = 0
+    for digit_value in magnitude_digits:
+        clamped = min(max(digit_value, 0.0), 1.0)
+        digit = int(round(clamped * (base - 1)))
+        magnitude = magnitude * base + digit
+    return -magnitude if sign_bit else magnitude
+
+
+__all__ = ["EncodingSpec", "compute_encoding", "decode_number", "encode_number", "required_digits"]
