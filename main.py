@@ -1,3 +1,4 @@
+import argparse
 from typing import Dict, Tuple
 
 from train_models import (
@@ -58,7 +59,7 @@ def build_scenario() -> Tuple[
     return data_sweeps, training_configs, architectures
 
 
-def main() -> None:
+def main(*, write_run_records: bool = True) -> None:
     data_sweeps, training_configs, architectures = build_scenario()
     analysis_plan = AnalysisPlan(
         loss_curves=LossCurveAnalysisConfig(
@@ -75,8 +76,16 @@ def main() -> None:
         results_dir="results",
         analysis_plan=analysis_plan,
         torch_seed=0,
+        write_run_records=write_run_records,
     )
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run neural arithmetic experiments.")
+    parser.add_argument(
+        "--no-run-records",
+        action="store_true",
+        help="Skip writing JSON run record files to the results directory.",
+    )
+    args = parser.parse_args()
+    main(write_run_records=not args.no_run_records)
